@@ -1533,3 +1533,159 @@ class LocalProvider:
             connection.cursor().execute(sql, ())
             connection.commit()
                         
+    @staticmethod
+    def get_all_tmdb_ids() -> (list, list):
+
+        with sqlite3.connect(shared.db) as connection:
+            sql = """SELECT id FROM movies WHERE manual = False;"""
+            connection.row_factory = sqlite3.Row
+            movie_ids = connection.cursor().execute(sql, ()).fetchall()
+            movie_ids = list(map(lambda x: int(x['id']), movie_ids))
+            sql = """SELECT id FROM series WHERE manual = False;"""
+            serie_ids = connection.cursor().execute(sql, ()).fetchall()
+            serie_ids = list(map(lambda x: int(x['id']), serie_ids))
+        return(movie_ids, serie_ids)
+
+    @staticmethod
+    def add_tmdb_watchlist_to_local(account) -> None:
+        """
+            Adds all watchlist items of TMDB to the local DB. This is only intended to be used when the local DB is empty.
+        Args:
+            Account: Account Object from tmdbsimple with account.info() called on
+        Returns:
+            None
+        """
+
+        result = tmdb.get_movie_watchlist(account, page = 1)
+        movies = result['results']
+        total_pages = movies['total_pages']
+        page = 1
+        while True:
+            for movie in movies:
+                LocalProvider.add_Movies(MovieModel(movie))
+            page = page + 1
+            if page <= total_pages:
+                result = tmdb.get_movie_watchlist(account, page = page)
+                movies = result['results']
+            else:
+                break
+
+        result = tmdb.get_TV_watchlist(account, page = 1)
+        series = result['results']
+        total_pages = series['total_pages']
+        page = 1
+        while True:
+            for serie in series:
+                LocalProvider.add_series(SeriesModel(serie))
+            page = page + 1
+            if page <= total_pages:
+                result = tmdb.get_TV_watchlist(account, page = page)
+                series = result['results']
+            else:
+                break
+
+
+    @staticmethod
+    def merge_tmdb_watchlist(account) -> None:
+        """
+            Merges local and TMDB watchlist
+        Args:
+            Account: Account Object from tmdbsimple with account.info() called on
+        Returns:
+            None
+        """
+        if not account:
+            account = tmdb.make_account()
+        movie_ids, serie_ids = LocalProvider.get_all_tmdb_ids()
+        result = tmdb.get_movie_watchlist(account, page = 1)
+        movies = result['results']
+        total_pages = result['total_pages']
+        page = 1
+        while True:
+            for movie in movies:
+                if movie['id'] in movie_ids:
+                    movie_ids.remove(movie['id'])
+                else:
+                    LocalProvider.add_movie(id = movie['id'])
+            page = page + 1
+            if page <= total_pages:
+                result = tmdb.get_movie_watchlist(account, page = page)
+                movies = result['results']
+            else:
+                break
+
+
+        result = tmdb.get_TV_watchlist(account, page = 1)
+        series = result['results']
+        total_pages = result['total_pages']
+        page = 1
+
+        while True:
+            for serie in series:
+                if serie['id'] in serie_ids:
+                    serie_ids.remove(serie['id'])
+                else:
+                    LocalProvider.add_series(id = serie['id'])
+            page = page + 1
+            if page <= total_pages:
+                result = tmdb.get_TV_watchlist(account, page = page)
+                series = result['results']
+            else:
+                break
+
+        #Add all remaining ids from movie/serie_ids to TMDB watchlist
+        for id in movie_ids:
+            tmdb.add_content_to_tmdb_watchlist(account, movie = True, id = id, add = True)
+        for id in serie_ids:
+            tmdb.add_content_to_tmdb_watchlist(account, movie = False, id = id, add = True)
+
+
+    @staticmethod
+    def sync_tmdb(account) -> None:
+        """
+            Adds all new content from TMDB. We get the watchlist by descending order meaning that as soon as we have a item 
+            of the tmdb watchlist already, all following items of the tmdb watchlist should be in the local db
+
+        Args:
+            Account: Account Object from tmdbsimple with account.info() called on
+        Returns:
+            None
+        """
+        movie_ids, serie_ids = LocalProvider.get_all_tmdb_ids()
+        result = tmdb.get_movie_watchlist(account, page = 1)
+        movies = result['results']
+        total_pages = result['total_pages']
+        page = 1
+        
+        while True:
+            for movie in movies:
+                if movie['id'] in movie_ids:
+                    break
+                else:
+                    LocalProvider.add_movie(id = movie['id'])
+            page = page + 1
+            if page <= total_pages:
+                result = tmdb.get_movie_watchlist(account, page = page)
+                movies = result['results']
+            else:
+                break
+
+
+        result = tmdb.get_TV_watchlist(account, page = 1)
+        series = result['results']
+        total_pages = result['total_pages']
+        page = 1
+
+        while True:
+            for serie in series:
+                if serie['id'] in serie_ids:
+                    break
+                else:
+                    LocalProvider.add_series(id = serie['id'])
+            page = page + 1
+            if page <= total_pages:
+                result = tmdb.get_TV_watchlist(account, page = page)
+                series = result['results']
+            else:
+                break
+
