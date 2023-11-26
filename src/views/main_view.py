@@ -119,13 +119,13 @@ class MainView(Adw.Bin):
             self._check_update_content()
             if shared.schema.get_int('tmdb-status') == 2:
                 self.account = tmdb.make_account()
-                BackgroundQueue.add(
-                        activity=BackgroundActivity(
-                            activity_type=ActivityType.SYNC,
-                            title=C_('Background activity title',
-                                     'TMDB sync'),
-                            task_function=self._sync_content),
-                        on_done=self._on_sync_done)
+                # BackgroundQueue.add(
+                #         activity=BackgroundActivity(
+                #             activity_type=ActivityType.SYNC,
+                #             title=C_('Background activity title',
+                #                      'TMDB sync'),
+                #             task_function=self._sync_content),
+                #         on_done=self._on_sync_done)
         
 
     def _check_update_content(self) -> None:
