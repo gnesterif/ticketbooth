@@ -69,6 +69,10 @@ class LocalProvider:
         get_new_release_status(id: int): Returns if the content given by the id has had a new release
         set_soon_release_status(id: int, value: bool): Sets the soon_release field of the given content to value
         get_soon_release_status(id: int): Returns if the content given by the id has a new release soon
+        set_recent_change_status(id: int, value: bool, movie: bool): Sets the recent_change field indicated by id and movie to value
+        get_recent_change_status(id: int, movie: bool): Gets the recent_change field indicated by id and movie
+        reset_recent_change(): Sets all recent_changes of all tables to false, used at closing of window
+        reset_activate_notification(): Sets all activate_notification fields to false
     """
 
     @staticmethod
@@ -193,7 +197,7 @@ class LocalProvider:
             None
         """
         
-
+        logging.info(f'[db] Update series table, adding missing columns')
         with sqlite3.connect(shared.db) as connection:
 
             sql = """pragma table_info(series)"""
@@ -295,7 +299,7 @@ class LocalProvider:
 
 
     def update_movies_table() -> None:
-
+        logging.info(f'[db] Update movies table, adding missing columns')
         with sqlite3.connect(shared.db) as connection:
             
             sql = """pragma table_info(movies)"""
@@ -1185,22 +1189,21 @@ class LocalProvider:
             int or None containing the id of the last modified row
         """
         # Save episodes statuses before delete
+        logging.debug(f'[db] TV series {id}, updating')
         watched_episodes = []
         for season in old.seasons:  # type: ignore
             for episode in season.episodes:
                 if episode.watched:
                     watched_episodes.append(episode.id)
 
-        #remove series but not the posters, therefore not calling remove_series()
+        # remove series but not the posters, therefore not calling remove_series()
         # TODO Handle if the poster changes, the same problem in update_movie
         with sqlite3.connect(shared.db) as connection:
             connection.cursor().execute('PRAGMA foreign_keys = ON;')
-
             sql = """DELETE FROM series WHERE id = ?"""
             result = connection.cursor().execute(sql, (old.id,))
             connection.commit()
             connection.cursor().close()
-            logging.debug(f'[db] TV series {id}, deleted: {result.lastrowid}')
 
         #Copy all flags that get reset but are still needed from the old to the new soon_release is automatically set in SeriesModel
         new.activate_notification = old.activate_notification
@@ -1556,6 +1559,7 @@ class LocalProvider:
             None
         """
 
+        logging.info(f'[db] Add TMDB watchlist to [db]')
         result = tmdb.get_movie_watchlist(account, page = 1)
         movies = result['results']
         total_pages = movies['total_pages']
@@ -1594,6 +1598,7 @@ class LocalProvider:
         Returns:
             None
         """
+        logging.info(f'[db] Merge TMDB watchlist with local [db]')
         if not account:
             account = tmdb.make_account()
         movie_ids, serie_ids = LocalProvider.get_all_tmdb_ids()
@@ -1651,6 +1656,7 @@ class LocalProvider:
         Returns:
             None
         """
+        logging.info(f'[db] sync TMDB watchlist')
         movie_ids, serie_ids = LocalProvider.get_all_tmdb_ids()
         result = tmdb.get_movie_watchlist(account, page = 1)
         movies = result['results']

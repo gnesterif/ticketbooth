@@ -11,7 +11,8 @@ from gettext import pgettext as C_
 from gi.repository import Adw, Gio, GLib, Gtk
 
 from . import shared  # type: ignore
-from .background_queue import BackgroundQueue
+from .background_queue import (ActivityType, BackgroundActivity,
+                                BackgroundQueue)
 from .dialogs.add_manual_dialog import AddManualDialog
 from .dialogs.add_tmdb_dialog import AddTMDBDialog
 from .views.first_run_view import FirstRunView
@@ -119,7 +120,7 @@ class TicketboothWindow(Adw.ApplicationWindow):
                 title=C_('Background activity title',
                             'TMDB force sync'),
                 task_function=local.merge_tmdb_watchlist),
-            on_done=self._refresh)
+            on_done=source._win_stack.get_child_by_name('main').refresh())
 
     def _update_background_indicator(self, new_state: None, source: Gtk.Widget) -> None:
         """
@@ -205,11 +206,13 @@ class TicketboothWindow(Adw.ApplicationWindow):
         if shared.schema.get_int('tmdb-status') != 2:
             actions_to_insert.pop(-1)
         self.add_action_entries(actions_to_insert, self)
+
         self._restore_state()
         self.app = kwargs.get("application")
         if shared.DEBUG:
             self.add_css_class('devel')
 
+        local.reset_recent_change() #Safety if the app is killed instead of closed
         # Safety if somebody kills the app while session ID was acquired but sync not finished
         if shared.schema.get_int('tmdb-status') == 1:
             shared.schema.set_uint('tmdb-status', 0)
@@ -260,7 +263,6 @@ class TicketboothWindow(Adw.ApplicationWindow):
 
         # recent_change reset
         local.reset_recent_change()
-        logging.info('recent_change reseted')
 
         #Check if the tmdb status is set to 1 (session ID accquired but no sync) if this is the case delete session ID and set to 0 (No setup done)
         if shared.schema.get_int('tmdb-status') == 1:

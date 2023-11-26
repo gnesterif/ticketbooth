@@ -110,13 +110,13 @@ class MainView(Adw.Bin):
             self._check_update_content()
             if shared.schema.get_int('tmdb-status') == 2:
                 self.account = tmdb.make_account()
-                BackgroundQueue.add(
-                        activity=BackgroundActivity(
-                            activity_type=ActivityType.SYNC,
-                            title=C_('Background activity title',
-                                     'TMDB sync'),
-                            task_function=self._sync_content),
-                        on_done=self._on_sync_done)
+                # BackgroundQueue.add(
+                #         activity=BackgroundActivity(
+                #             activity_type=ActivityType.SYNC,
+                #             title=C_('Background activity title',
+                #                      'TMDB sync'),
+                #             task_function=self._sync_content),
+                #         on_done=self._on_sync_done)
         
 
     def _check_update_content(self) -> None:
@@ -278,7 +278,7 @@ class MainView(Adw.Bin):
                 out_of_production_series.append(new_serie)
                 local.set_notification_list_status(serie.id, False)
 
-            serie = local.get_series_by_id(serie.id) #refetch serie to get all the correct flags that we set from the database
+            serie = local.get_series_by_id(serie.id) # refetch serie to get all the correct flags that we set from the database
             local.update_series(serie, new_serie)
 
         movies = local.get_all_movies_notification_list()
