@@ -100,6 +100,7 @@ class LocalProvider:
                         genres TEXT,
                         id TEXT PRIMARY KEY,
                         manual BOOLEAN,
+                        notes TEXT,
                         new_release BOOLEAN,
                         original_language TEXT,
                         original_title TEXT,
@@ -143,9 +144,11 @@ class LocalProvider:
                             id TEXT PRIMARY KEY,
                             in_production BOOLEAN,
                             last_air_date TEXT,
+                            last_episode_number TEXT,
                             manual BOOLEAN,
                             next_air_date TEXT,
                             new_release BOOLEAN,
+                            notes TEXT,
                             original_language TEXT,
                             original_title TEXT,
                             overview TEXT,
@@ -1685,7 +1688,8 @@ class LocalProvider:
     def sync_tmdb(account) -> None:
         """
             Adds all new content from TMDB. We get the watchlist by descending order meaning that as soon as we have a item 
-            of the tmdb watchlist already, all following items of the tmdb watchlist should be in the local db
+            of the tmdb watchlist already, all following items of the tmdb watchlist should be in the local db.
+            This intended to be run un start-up of the program
 
         Args:
             Account: Account Object from tmdbsimple with account.info() called on
