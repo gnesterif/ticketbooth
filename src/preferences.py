@@ -591,7 +591,7 @@ class PreferencesDialog(Adw.PreferencesDialog):
         Returns:
             None
         """
-        self.present_subpage(self._tmdb_setup_page)
+        self.push_subpage(self._tmdb_setup_page)
 
     @Gtk.Template.Callback('_on_tmdb_close_btn_clicked')
     def _on_tmdb_close_btn_clicked(self, user_data: object | None) -> None:
@@ -607,7 +607,7 @@ class PreferencesDialog(Adw.PreferencesDialog):
         if self.tmdb_cancel:
             self.tmdb_cancel.cancel() # This is connected to self._tmdb_watchlist_sync_cancel()
             return
-        self.close_subpage()
+        self.pop_subpage()
 
     @Gtk.Template.Callback('_tmdb_sync_map')
     def _tmdb_sync_map(self, user_data: object | None) -> None:
@@ -663,7 +663,7 @@ class PreferencesDialog(Adw.PreferencesDialog):
             Gtk.UriLauncher(uri=f"https://www.themoviedb.org/authenticate/{token}").launch()
             self._tmdb_continue_btn.set_sensitive(True)
         else:
-            Toast = Adw.Toast(
+            toast = Adw.Toast(
                 title=_("Error: Could not connect to TMDB. Are you online?"), 
                 timeout=5)
             self.add_toast(toast)
@@ -700,7 +700,7 @@ class PreferencesDialog(Adw.PreferencesDialog):
                 self.add_toast(toast)
                 return
 
-            shared.schema.set_uint('tmdb-status', 1)
+            shared.schema.set_int('tmdb-status', 1)
 
             next_page = self._tmdb_carousel.get_nth_page(index + 1)
             self._tmdb_carousel.scroll_to(next_page, True)
@@ -751,7 +751,7 @@ class PreferencesDialog(Adw.PreferencesDialog):
         elif self._keep_both_check_btn.get_active(): 
             local.merge_tmdb_watchlist(self.account)
 
-        shared.schema.set_uint('tmdb-status', 2)
+        shared.schema.set_int('tmdb-status', 2)
 
     def _tmdb_watchlist_sync_completed(self, source: GObject.Object | None, result: Gio.AsyncResult, data: object | None):
         """
@@ -807,7 +807,7 @@ class PreferencesDialog(Adw.PreferencesDialog):
         result = tmdb.delete_session()
         if result:
             shared.schema.set_string('tmdb-session-id', '')
-            shared.schema.set_uint('tmdb-status', 0)
+            shared.schema.set_int('tmdb-status', 0)
             self._tmdb_continue_btn.set_visible(True)
             self._tmdb_continue_btn.set_sensitive(False)
             self._tmdb_continue_btn.set_label(_("Continue"))

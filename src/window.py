@@ -220,7 +220,7 @@ class TicketboothWindow(Adw.ApplicationWindow):
         actions_to_insert = self._actions
         # Deactivate sync option if tmdb is not setup TODO find a way to do revert this when login/logout to/from TMDB 
         if shared.schema.get_int('tmdb-status') != 2:
-            actions_to_insert.pop(-1)
+            actions_to_insert = {action for action in actions_to_insert if action[0] != "sync"}
         self.add_action_entries(actions_to_insert, self)
 
         self._restore_state()
@@ -228,10 +228,11 @@ class TicketboothWindow(Adw.ApplicationWindow):
         if shared.DEBUG:
             self.add_css_class('devel')
 
-        local.reset_recent_change() #Safety if the app is killed instead of closed
+        if (shared.schema.get_boolean("first-run")):
+            local.reset_recent_change() #Safety if the app is killed instead of closed
         # Safety if somebody kills the app while session ID was acquired but sync not finished
         if shared.schema.get_int('tmdb-status') == 1:
-            shared.schema.set_uint('tmdb-status', 0)
+            shared.schema.set_int('tmdb-status', 0)
             shared.schema.set_string('tmdb-session-id', '')
 
         shared.schema.bind('offline-mode', self.lookup_action('add-tmdb'),
@@ -282,7 +283,7 @@ class TicketboothWindow(Adw.ApplicationWindow):
 
         #Check if the tmdb status is set to 1 (session ID accquired but no sync) if this is the case delete session ID and set to 0 (No setup done)
         if shared.schema.get_int('tmdb-status') == 1:
-            shared.schema.set_uint('tmdb-status', 0)
+            shared.schema.set_int('tmdb-status', 0)
             shared.schema.set_string('tmdb-session-id', '')
             
         logging.info('Closing')

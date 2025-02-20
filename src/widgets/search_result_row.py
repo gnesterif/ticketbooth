@@ -181,16 +181,13 @@ class SearchResultRow(Gtk.ListBoxRow):
         except ConnectionError:
             activity.set_error(True)
 
-        if shared.schema.get_int('activate-notification-behaviour') == 2:
-            local.set_notification_list_status(self.tmdb_id, False)
-
         if shared.schema.get_int('tmdb-status') == 2:
             try:
                 account = tmdb.make_account()
                 tmdb.add_content_to_tmdb_watchlist(account, movie = self.media_type == 'movie', id = self.tmdb_id, add = True)
-            except (tmdb.base.APIKeyError, HTTPError):
+            except (tmdb.base.APIKeyError, tmdb.base.HTTPError):
                 # Show Toast to notify that TMDB syncing is not working
-                Toast = Adw.Toast(
+                toast = Adw.Toast(
                     title=_("Could not add content to TMDB watchlist. You could try again with a refresh."), 
                     timeout=5)
                 self.get_ancestor(Adw.Window).get_transient_for().add_toast(toast)
